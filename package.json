@@ -1,0 +1,48 @@
+{
+  "name": "server",
+  "version": "1.0.0",
+  "main": "app.js",
+  "type": "module",
+  "scripts": {
+    "dev": "dotenv -e ./env/.env.dev nodemon server.js",
+    "stag": "dotenv -e ./env/.env.stage node server.js",
+    "prod": "dotenv -e ./env/.env.prod node server.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@adminjs/express": "^6.1.1",
+    "@adminjs/mongoose": "^4.1.0",
+    "@babel/cli": "^7.25.9",
+    "@babel/core": "^7.26.0",
+    "@babel/node": "^7.26.0",
+    "@babel/preset-env": "^7.26.0",
+    "@babel/register": "^7.27.1",
+    "adminjs": "^7.8.15",
+    "babel-polyfill": "^6.26.0",
+    "bcryptjs": "^2.4.3",
+    "body-parser": "^1.20.3",
+    "cors": "^2.8.5",
+    "crypto": "^1.0.1",
+    "crypto-js": "^4.2.0",
+    "dayjs": "^1.11.13",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.2",
+    "fs": "^0.0.1-security",
+    "google-auth-library": "9.0.0",
+    "handlebars": "^4.7.8",
+    "jsonwebtoken": "^9.0.2",
+    "jwk-to-pem": "^2.0.7",
+    "moment": "^2.30.1",
+    "mongoose": "^8.13.0",
+    "nodemailer": "^7.0.4",
+    "nodemon": "^3.1.7"
+  },
+  "devDependencies": {
+    "dotenv-cli": "^8.0.0",
+    "jest": "^30.0.4",
+    "supertest": "^7.1.3"
+  }
+}
