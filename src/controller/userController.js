@@ -174,6 +174,9 @@ const getUserList = async (req, res) => {
   }
 };
 
+/**
+ * User List on our application
+ */
 const getPatientList = async (req, res) => {
   try {
     let { limit, page, role, searchText, isActive } = req.query;
@@ -259,6 +262,9 @@ const getPatientList = async (req, res) => {
   }
 };
 
+/**
+ * User List on our application
+ */
 const getProviderList = async (req, res) => {
   try {
     let { limit, page, searchText, isActive } = req.query;
@@ -550,8 +556,6 @@ const updateUserOnBoardingStatus = async (req, res) => {
     );
   }
 };
-
-
 
 export default {
   getSingleUser,

@@ -17,6 +17,7 @@ export const HTTP_MESSAGES = {
     OTP_EXPIRED: "The OTP has expired",
     OTP_INCORRECT: "Incorrect OTP",
     OTP_SENT_SUCCESS: "OTP sent to email",
+    OTP_SENT_MOBILE_SUCCESS: "OTP sent to your mobile number",
     OTP_VERIFIED_SUCCESS: "OTP verified successfully",
     OTP_DOES_NOT_EXIST: "OTP does not exist! Please resend OTP",
     OTP_VERIFICATION_REQUIRED: "OTP verification required to reset password",

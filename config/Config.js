@@ -34,6 +34,9 @@ const config = {
     CLIENT_BASE_PATH: process.env.CLIENT_BASE_PATH,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     MAXIMUM_ATTEMPTS: process.env.MAXIMUM_ATTEMPTS,
+    TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
+    TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
+    TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER,
   },
   staging: {
     DB: {
@@ -63,6 +66,9 @@ const config = {
     CLIENT_BASE_PATH: process.env.CLIENT_BASE_PATH,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     MAXIMUM_ATTEMPTS: process.env.MAXIMUM_ATTEMPTS,
+    TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
+    TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
+    TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER,
   },
   production: {
     DB: {
@@ -103,6 +109,9 @@ const config = {
     CLIENT_BASE_PATH: process.env.CLIENT_BASE_PATH,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
     MAXIMUM_ATTEMPTS: process.env.MAXIMUM_ATTEMPTS,
+    TWILIO_ACCOUNT_SID: process.env.TWILIO_ACCOUNT_SID,
+    TWILIO_AUTH_TOKEN: process.env.TWILIO_AUTH_TOKEN,
+    TWILIO_PHONE_NUMBER: process.env.TWILIO_PHONE_NUMBER,
   },
 };
 

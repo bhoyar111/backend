@@ -9,6 +9,7 @@ export default (router) => {
   // Authentication routes for sendOtpFor2fa, verifyOtpFor2fa
   router.post("/sent-otp", authController.sendOtpFor2fa);
   router.post("/vertify-otp", authController.verifyOtpFor2fa);
+  router.post("/sent-mobile-otp", authController.mobileVerifyFor2fa);
 
   // Authentication routes for forgetPassword, forgetPassword
   router.post("/forgot-password", authController.forgetPassword);

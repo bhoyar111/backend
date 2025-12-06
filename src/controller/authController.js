@@ -7,6 +7,7 @@ import { get } from "../../config/Config.js";
 
 import { sendError, sendSuccess } from "../utils/customeResponse.js";
 import { sendEmail } from "../utils/emailSend/sendMail.js";
+import { sendSms } from "../utils/smsSend/smsService.js";
 import { canSendOtp, generate4DigitOTP } from "../../config/Constant.js";
 import {
   saveDetails,
@@ -31,10 +32,65 @@ import {
   sentOtpMail,
 } from "../utils/emailSend/emailTemplate.js";
 import { getMessage } from "../utils/locale.js";
+import {createAndSendNotification} from "./notificationControl.js"
 
 const configData = get(process.env.NODE_ENV);
 const CLIENT_ID = configData.GOOGLE_CLIENT_ID;
 const googleClient = new OAuth2Client(CLIENT_ID);
+
+
+
+/**
+ * Function is used for user notification.
+ * @access public
+ * @return json
+ */
+export const sendUserNotifications = async (loggedInUser) => {
+   try {
+    // console.log(`loggedInUser`,  loggedInUser);
+      const admin = await User.findOne({ role: "Admin", isDeleted: false });
+  
+      if (!admin) {
+        console.log("Admin not found for login notification");
+        return;
+      }
+  
+      const role = loggedInUser.role; // Patient / Provider / Admin
+  
+      const title = `${role} Login Alert`;
+      const message = `${loggedInUser.fullName || role} logged in successfully`;
+  
+      const channels = [];
+  
+      // Admin should get email
+      if (admin.email) channels.push("email");
+  
+      // Admin should get push if FCM exists
+      if (admin.fcmToken?.length > 0) channels.push("push");
+  
+      return await createAndSendNotification({
+        toEmail: admin.email,
+        recipientRole: "Admin",
+        recipientId: admin._id,
+        type: "GENERAL",
+        title,
+        message,
+        metaData: { userId: loggedInUser._id, role },
+        createdBy: loggedInUser._id,
+        channels,
+        emailTemplateName: "login-alert",
+        emailContent: {
+          userName: loggedInUser.fullName || "",
+          action: "Login",
+          role,
+          date: new Date().toLocaleDateString(),
+          time: new Date().toLocaleTimeString(),
+        },
+      });
+    } catch (err) {
+      console.log("Login Notification Error:", err.message);
+    }
+};
 
 /**
  * Function is used for user sign-up.
@@ -155,7 +211,10 @@ const logIn = async (req, res) => {
               { new: true }
             );
           }
+          // If login success → Trigger login notification
+          await sendUserNotifications(userInfo);
         }
+        // console.log(`userInfo---`, userInfo );
         return sendSuccess(res, 200, getMessage(req, "LOGIN_SUCCESS"), isMatch);
       }
     } else {
@@ -478,6 +537,30 @@ const verifyOtpFor2fa = async (req, res) => {
     } else {
       return sendError(res, 200, getMessage(req, "OTP_DOES_NOT_EXIST"));
     }
+  } catch (error) {
+    return sendError(
+      res,
+      500,
+      error.message || getMessage(req, "INTERNAL_SERVER_ERROR")
+    );
+  }
+};
+
+/**
+ * Function is used send otp for 2FA.
+ */
+const mobileVerifyFor2fa = async (req, res) => {
+  try {
+    const { numberNo } = req.body;
+    const otp = generate4DigitOTP();
+    // Send SMS (implement sendSms using Twilio / any SMS provider)
+    await sendSms(numberNo, `Your verification code is ${otp}`);
+    return sendSuccess(
+      res,
+      200,
+      getMessage(req, "OTP_SENT_MOBILE_SUCCESS"),
+    );
+
   } catch (error) {
     return sendError(
       res,
@@ -819,6 +902,7 @@ export default {
   resetPassword,
   sendOtpFor2fa,
   verifyOtpFor2fa,
+  mobileVerifyFor2fa,
   forgetPasswordForMobile,
   resetPasswordForMobile,
   verifyOtpForForgotpassword,
