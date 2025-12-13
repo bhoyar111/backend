@@ -1,10 +1,8 @@
-
 import Notification from "../models/notification.js";
 import User from "../models/users.js";
 
 import { sendEmail } from "../utils/emailSend/sendMail.js";
 import { sendPushNotification } from "../utils/pushNoti/firebaseNotification.js";
-
 
 export const createAndSendNotification = async ({
   io,                 // Pass io explicitly from controller/service

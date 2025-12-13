@@ -32,7 +32,7 @@ import {
   sentOtpMail,
 } from "../utils/emailSend/emailTemplate.js";
 import { getMessage } from "../utils/locale.js";
-import {createAndSendNotification} from "./notificationControl.js"
+import { createAndSendNotification } from "./notificationControlller.js"
 
 const configData = get(process.env.NODE_ENV);
 const CLIENT_ID = configData.GOOGLE_CLIENT_ID;
