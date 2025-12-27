@@ -55,6 +55,8 @@ export const HTTP_MESSAGES = {
     ONBOARDING_STATUS_UPDATED: "Onboarding status updated successfully",
     INVITATION_IMRIA_HEALTH: "You're Invited to Imria Health",
     MONTHLY_SLOTS_RETRIEVED: "Monthly slots fetch successfully",
+    INVALID_CREDENTIAL: "Invalid Credential",
+    ACCOUNT_LOCKED: "Account locked please try after 15 min"
 
   },
   // FR: {

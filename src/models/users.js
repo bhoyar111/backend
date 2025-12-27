@@ -118,6 +118,16 @@ const userSchema = new mongoose.Schema(
       default: false,
     },
 
+    loginAttempts: {
+      type: Number,
+      default: 0
+    },
+
+    lockUntil: {
+      type: Date,
+      default: null
+    },
+
     speciality: {
       type: [String],
       default: undefined, // won’t auto-create []

@@ -3,6 +3,7 @@ import { OAuth2Client } from "google-auth-library";
 
 import User from "../models/users.js";
 import Otp2FA from "../models/otp2FA.js";
+import AuthFailureLogs from "../models/authFailureLogs.js";
 import { get } from "../../config/Config.js";
 
 import { sendError, sendSuccess } from "../utils/customeResponse.js";
@@ -32,13 +33,16 @@ import {
   sentOtpMail,
 } from "../utils/emailSend/emailTemplate.js";
 import { getMessage } from "../utils/locale.js";
-import { createAndSendNotification } from "./notificationControlller.js"
+import { createAndSendNotification } from "./notificationControlller.js";
+import { createActivityLog } from "../utils/logs/activityLogger.js";
+import { logAuthFailure } from "../utils/logs/authFailureLogs.js";
 
 const configData = get(process.env.NODE_ENV);
 const CLIENT_ID = configData.GOOGLE_CLIENT_ID;
 const googleClient = new OAuth2Client(CLIENT_ID);
 
-
+const MAX_ATTEMPTS = process.env.MAXIMUM_LOGIN_ATTEMPTS;
+const LOCK_TIME = 15 * 60 * 1000; // 15 minutes
 
 /**
  * Function is used for user notification.
@@ -125,6 +129,22 @@ const signUp = async (req, res) => {
       isOnBoarding: false,
     });
 
+    // ACTIVITY LOG – CREATE USER
+    await createActivityLog({
+      req,
+      action: "CREATE",
+      module: "PATIENT_PROFILE",
+      description: "New User signup",
+      targetId: savedUser?._id,
+      targetType: "User",
+      userData: {
+        _id: savedUser._id,
+        fullName: savedUser.fullName,
+        role: savedUser.role,
+        email: savedUser.email,
+      },
+    });
+
     if (savedUser) {
       // await logUserAction({ user: savedUser, action: "REGISTERED" });
       return sendSuccess(
@@ -154,19 +174,39 @@ const logIn = async (req, res) => {
     });
 
     if (checkStatus?.email !== email) {
+      await logAuthFailure({
+        req,
+        email,
+        reason: getMessage(req, "INVALID_EMAIL"),
+      });
       return sendError(res, 206, getMessage(req, "INVALID_EMAIL"));
     }
 
     if (checkStatus && !checkStatus?.isActive) {
+      await logAuthFailure({
+        req,
+        email,
+        reason: getMessage(req, "ACCOUNT_INACTIVE"),
+      });
       return sendError(res, 206, getMessage(req, "ACCOUNT_INACTIVE"));
     }
 
     if (checkStatus?.role !== role) {
+      await logAuthFailure({
+        req,
+        email,
+        reason: getMessage(req, "UNAUTHORIZED_ROLE"),
+      });
       return sendError(res, 200, getMessage(req, "UNAUTHORIZED_ROLE"));
     }
 
     // Check password
     if (!email || !password) {
+      await logAuthFailure({
+        req,
+        email,
+        reason: getMessage(req, "REQUIRED_FIELDS"),
+      })
       return sendError(res, 206, getMessage(req, "REQUIRED_FIELDS"));
     }
 
@@ -174,7 +214,34 @@ const logIn = async (req, res) => {
       return sendError(res, 200, getMessage(req, "SET_YOUR_PASS"));
     }
 
+    if (checkStatus.lockUntil && checkStatus.lockUntil > Date.now()) {
+      await logAuthFailure({
+        req,
+        email,
+        reason: getMessage(req, "ACCOUNT_LOCKED"),
+      });
+      return sendError(res, 206, getMessage(req, "ACCOUNT_LOCKED"));
+    }
+
     const isMatch = await matchPassword({ email: email, password: password });
+
+    if (!isMatch) {
+      checkStatus.loginAttempts += 1;
+
+      // Lock account after 3 attempts
+      if (checkStatus.loginAttempts >= MAX_ATTEMPTS) {
+        checkStatus.lockUntil = new Date(Date.now() + LOCK_TIME);
+        checkStatus.loginAttempts = 0; // reset count after lock
+      }
+
+      await checkStatus.save();
+      await logAuthFailure({
+        req,
+        email,
+        reason: getMessage(req, "INVALID_CREDENTIAL"),
+      });
+      return sendError(res, 206, getMessage(req, "INVALID_CREDENTIAL"));
+    }
 
     if (isMatch) {
       let userInfo = isMatch?.userData;
@@ -195,7 +262,7 @@ const logIn = async (req, res) => {
 
         return sendSuccess(res, 200, getMessage(req, "VERIFY_ACCOUNT"), body);
       } else {
-        if (role === "Patient") {
+        if (role === "Patient" || role === "Provider" || role === "Admin") {
           if (req.body.fcmToken != "" || req.body.fcmToken != undefined) {
             const fcmToken = req.body.fcmToken;
             // Step 1: Remove the token from ALL users where it exists
@@ -214,10 +281,36 @@ const logIn = async (req, res) => {
           // If login success → Trigger login notification
           await sendUserNotifications(userInfo);
         }
-        // console.log(`userInfo---`, userInfo );
+        // Login Attempt clear
+        checkStatus.loginAttempts = 0;
+        checkStatus.lockUntil = null;
+        await checkStatus.save(); 
+
+        // After successful login (verified === true)
+          await createActivityLog({
+            req,
+            action: "VIEW",
+            module: userInfo.role === "Admin"
+            ? "ADMIN_PROFILE"
+            : userInfo.role === "Provider"
+            ? "PROVIDER_PROFILE"
+            : "PATIENT_PROFILE",
+            description: "User logged in successfully",
+            userData: {
+              _id: userInfo._id,
+              fullName: userInfo.fullName,
+              role: userInfo.role,
+              email: userInfo.email,
+            },
+          });
         return sendSuccess(res, 200, getMessage(req, "LOGIN_SUCCESS"), isMatch);
       }
     } else {
+      await logAuthFailure({
+        req,
+        email,
+        reason: getMessage(req, "INVALID_PASSWORD"),
+      });
       return sendError(res, 206, getMessage(req, "INVALID_PASSWORD"));
     }
   } catch (error) {
