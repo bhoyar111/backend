@@ -73,6 +73,7 @@ export const ensureAuthorized = (req, res, next) => {
       "/auth/verify-forgotpassword-otp",
       "/auth/login-with-google",
       "/auth/login-with-apple",
+      "/auth/login-logs",
 
     ];
     if (allowedPaths.includes(req.path)) return next();

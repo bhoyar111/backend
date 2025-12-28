@@ -2,6 +2,8 @@ import dayjs from "dayjs";
 import utc from "dayjs/plugin/utc.js";
 
 import User from "../models/users.js";
+import LoginLogs  from "../models/loginLogs.js";
+import UserActivityLogs from "../models/UserActivityLogs.js";
 
 import { getSingleDataByQuery } from "../utils/customeFunction.js";
 import { sendError, sendSuccess } from "../utils/customeResponse.js";
@@ -557,6 +559,86 @@ const updateUserOnBoardingStatus = async (req, res) => {
   }
 };
 
+const logUserAction = async (req, res) => {
+  const { user, action, logsId } = req.body;
+  try {
+    const ipAddress =
+      req?.headers["x-forwarded-for"] || req?.connection?.remoteAddress;
+
+    // If logsId is present, update the existing log
+    if (logsId) {
+      let data = {
+        _id: logsId,
+        jsonData: {
+          logoutAt: new Date(),
+          ipAddress,
+        },
+      };
+      const updatedLog = await updateDataById(LoginLogs, data);
+
+      if (!updatedLog) {
+        return sendError(res, 200, "Log not found for update");
+      } else {
+        return sendSuccess(res, 200, "Log updated successfully", updatedLog);
+      }
+    } else {
+      const logData = {
+        userId: user.userId,
+        fullName: user.fullName,
+        role: user.role,
+        email: user.email,
+        action,
+        ipAddress,
+      };
+
+      if (action === "Login") {
+        logData.loginAt = new Date();
+      }
+      if (action === "Logout") {
+        logData.logoutAt = new Date();
+      }
+      const saveData = await saveDetails(LoginLogs, logData);
+      return sendSuccess(res, 200, "Log created successfully", saveData);
+    }
+  } catch (err) {
+    return sendError(res, 500, err);
+  }
+};
+
+const getActivityLogs = async (req, res) => {
+  try {
+    let { page = 1, limit = 10, role, action, module, userId } = req.query;
+
+    page = parseInt(page);
+    limit = parseInt(limit);
+
+    const filter = {};
+
+    if (role) filter.role = role;
+    if (action) filter.action = action;
+    if (module) filter.module = module;
+    if (userId) filter.userId = userId;
+
+    const logs = await UserActivityLogs.find(filter)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    const total = await UserActivityLogs.countDocuments(filter);
+
+    return sendSuccess(res, 200, "Activity logs fetched", {
+      logs,
+      pagination: {
+        total,
+        page,
+        limit,
+      },
+    });
+  } catch (err) {
+    return sendError(res, 500, err.message);
+  }
+};
+
 export default {
   getSingleUser,
   getUserList,
@@ -565,5 +647,7 @@ export default {
   addOrUpdateUserProfile,
   updateUserProfileStatus,
   invitePatient,
-  updateUserOnBoardingStatus
+  updateUserOnBoardingStatus,
+  logUserAction,
+  getActivityLogs,
 };
